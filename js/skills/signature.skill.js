@@ -1,0 +1,75 @@
+// SKILL: Assinatura eletrônica — canvas de desenho + gravação da assinatura.
+import { db } from "../firebase-config.js";
+import {
+  doc, updateDoc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+export const SignatureSkill = {
+  /** Liga um <canvas> a mouse/toque e devolve controles do pad. */
+  attachPad(canvas) {
+    const ctx = canvas.getContext("2d");
+    let drawing = false;
+    let dirty = false;
+
+    const resize = () => {
+      const ratio = window.devicePixelRatio || 1;
+      const { width, height } = canvas.getBoundingClientRect();
+      canvas.width = width * ratio;
+      canvas.height = height * ratio;
+      ctx.scale(ratio, ratio);
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = "#0f172a";
+    };
+    resize();
+
+    const pos = (e) => {
+      const r = canvas.getBoundingClientRect();
+      return { x: e.clientX - r.left, y: e.clientY - r.top };
+    };
+
+    canvas.addEventListener("pointerdown", (e) => {
+      drawing = true;
+      canvas.setPointerCapture(e.pointerId);
+      const { x, y } = pos(e);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+    });
+    canvas.addEventListener("pointermove", (e) => {
+      if (!drawing) return;
+      const { x, y } = pos(e);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+      dirty = true;
+    });
+    ["pointerup", "pointercancel", "pointerleave"].forEach((ev) =>
+      canvas.addEventListener(ev, () => (drawing = false))
+    );
+
+    return {
+      clear() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        dirty = false;
+      },
+      isEmpty: () => !dirty,
+      toDataURL: () => canvas.toDataURL("image/png")
+    };
+  },
+
+  /** Grava a assinatura na proposta e marca como assinada. */
+  async sign(proposalId, { name, document, imageDataUrl }) {
+    if (!name?.trim()) throw new Error("Digite seu nome completo.");
+    if (!imageDataUrl) throw new Error("Faça sua assinatura no quadro.");
+    await updateDoc(doc(db, "proposals", proposalId), {
+      status: "signed",
+      signature: {
+        name: name.trim(),
+        document: String(document || "").trim(),
+        image: imageDataUrl,
+        signedAt: serverTimestamp(),
+        userAgent: navigator.userAgent
+      }
+    });
+  }
+};
