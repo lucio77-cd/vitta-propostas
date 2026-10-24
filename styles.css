@@ -1,0 +1,58 @@
+/* Estilos globais mínimos — o restante vem do Tailwind */
+
+html { -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; }
+body { padding-bottom: env(safe-area-inset-bottom); }
+
+/* Componentes reutilizáveis */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  padding: .75rem 1.25rem; border-radius: .75rem; font-weight: 600;
+  transition: background-color .15s, transform .05s; min-height: 44px;
+}
+.btn:active { transform: scale(.98); }
+.btn-primary { background: #0f766e; color: #fff; }
+.btn-primary:hover { background: #0d9488; }
+.btn-whatsapp { background: #25d366; color: #fff; }
+.btn-whatsapp:hover { background: #1ebe5b; }
+.btn-ghost { background: #fff; color: #0f766e; border: 1px solid #99f6e4; }
+.btn[disabled] { opacity: .6; cursor: not-allowed; }
+
+.card { background: #fff; border-radius: 1rem; padding: 1.25rem; box-shadow: 0 1px 3px rgba(15, 23, 42, .08); }
+.input {
+  width: 100%; padding: .75rem 1rem; border: 1px solid #cbd5e1; border-radius: .75rem;
+  background: #fff; font-size: 1rem; /* 16px evita zoom no iOS */
+}
+.input:focus { outline: 2px solid #14b8a6; outline-offset: 1px; border-color: transparent; }
+.label { display: block; font-size: .875rem; font-weight: 600; margin-bottom: .25rem; color: #334155; }
+
+/* Badges de status */
+.badge { padding: .15rem .6rem; border-radius: 999px; font-size: .75rem; font-weight: 600; }
+.badge-pending { background: #fef3c7; color: #92400e; }
+.badge-signed { background: #d1fae5; color: #065f46; }
+
+/* Canvas de assinatura */
+.signature-pad {
+  width: 100%; height: 200px; background: #fff; border: 2px dashed #94a3b8;
+  border-radius: .75rem; touch-action: none; /* impede scroll ao desenhar */
+}
+
+/* Spinner */
+.spinner {
+  width: 36px; height: 36px; border: 4px solid #ccfbf1; border-top-color: #0d9488;
+  border-radius: 50%; animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Toast */
+.toast {
+  position: fixed; left: 50%; bottom: 1.5rem; transform: translate(-50%, 150%);
+  background: #0f172a; color: #fff; padding: .75rem 1.25rem; border-radius: .75rem;
+  transition: transform .25s; z-index: 50; max-width: 90vw;
+}
+.toast.show { transform: translate(-50%, 0); }
+
+/* Impressão / PDF da proposta */
+@media print {
+  #app-header, #app-footer, .no-print { display: none !important; }
+  body { background: #fff; }
+}
