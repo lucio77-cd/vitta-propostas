@@ -38,6 +38,7 @@ export const ProposalsSkill = {
       ownerId,
       status: "pending",
       signature: null,
+      signedAt: null,
       createdAt: serverTimestamp()
     };
     const ref = await addDoc(collection(db, COL), payload);

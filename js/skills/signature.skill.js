@@ -63,12 +63,12 @@ export const SignatureSkill = {
     if (!imageDataUrl) throw new Error("Faça sua assinatura no quadro.");
     await updateDoc(doc(db, "proposals", proposalId), {
       status: "signed",
+      signedAt: serverTimestamp(), // deve ser exatamente request.time (validado nas regras)
       signature: {
         name: name.trim(),
-        document: String(document || "").trim(),
+        document: String(document || "").trim().slice(0, 30),
         image: imageDataUrl,
-        signedAt: serverTimestamp(),
-        userAgent: navigator.userAgent
+        userAgent: navigator.userAgent.slice(0, 500)
       }
     });
   }
