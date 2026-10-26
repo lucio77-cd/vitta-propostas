@@ -34,7 +34,7 @@ export async function proposalDetailView({ id }) {
       ${signed ? `
         <div class="card">
           <span class="badge badge-signed">Assinada</span>
-          <p class="mt-2">por <strong>${esc(p.signature.name)}</strong> em ${fmtDate(p.signature.signedAt)}</p>
+          <p class="mt-2">por <strong>${esc(p.signature.name)}</strong> em ${fmtDate(p.signedAt)}</p>
           <img src="${p.signature.image}" alt="Assinatura" class="mt-3 border rounded-lg bg-white max-h-32" />
         </div>` : `<span class="badge badge-pending">Aguardando assinatura</span>`}
 
