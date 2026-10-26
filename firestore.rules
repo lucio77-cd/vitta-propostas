@@ -1,0 +1,92 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =====================================================================
+    // FUNÇÕES AUXILIARES
+    // =====================================================================
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // O documento existente pertence ao usuário autenticado?
+    function isOwner() {
+      return isSignedIn() && resource.data.ownerId == request.auth.uid;
+    }
+
+    // Valida o mapa "signature" enviado pelo cliente final.
+    // Obrigatórios: name (string) e image (PNG em base64).
+    // Opcionais:    document (CPF/CNPJ) e userAgent, ambos com tamanho limitado.
+    function validSignature(sig) {
+      return sig is map
+        && sig.keys().hasOnly(['name', 'image', 'document', 'userAgent'])
+        && sig.keys().hasAll(['name', 'image'])
+        && sig.name is string
+        && sig.name.size() > 0 && sig.name.size() <= 120
+        && sig.image is string
+        && sig.image.matches('^data:image/png;base64,.+')
+        && sig.image.size() <= 700000                       // abaixo do limite de 1 MB por documento
+        && (!('document' in sig)  || (sig.document is string  && sig.document.size()  <= 30))
+        && (!('userAgent' in sig) || (sig.userAgent is string && sig.userAgent.size() <= 500));
+    }
+
+    // Transição de assinatura feita pelo CLIENTE (autenticado ou não):
+    //  - o documento precisa estar 'pending';
+    //  - só podem mudar status, signature e signedAt (os três, obrigatoriamente);
+    //  - status vira 'signed' e signedAt é EXATAMENTE o horário do servidor.
+    // Qualquer outro campo (itens, total, título, ownerId...) faz a regra falhar.
+    function isClientSigning() {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return resource.data.status == 'pending'
+        && changed.hasOnly(['status', 'signature', 'signedAt'])
+        && changed.hasAll(['status', 'signature', 'signedAt'])
+        && request.resource.data.status == 'signed'
+        && request.resource.data.signedAt == request.time
+        && validSignature(request.resource.data.signature);
+    }
+
+    // =====================================================================
+    // COLEÇÃO: proposals
+    // =====================================================================
+    match /proposals/{proposalId} {
+
+      // LEITURA PONTUAL (get): qualquer pessoa que souber o ID exato do documento.
+      // O ID automático do Firestore (20 caracteres) funciona como o "segredo" do link.
+      allow get: if true;
+
+      // LISTAGEM (list/query): somente o profissional autenticado e apenas das
+      // próprias propostas. Deslogados nunca conseguem varrer a coleção.
+      allow list: if isOwner();
+
+      // CRIAÇÃO: o dono é quem está logado; nasce 'pending', sem assinatura
+      // e sem data de assinatura.
+      allow create: if isSignedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.signature == null
+        && request.resource.data.get('signedAt', null) == null;
+
+      // ATUALIZAÇÃO PELO DONO: somente enquanto 'pending'. Não pode trocar o
+      // ownerId nem o createdAt, nem "assinar" por conta própria
+      // (status segue 'pending', signature e signedAt seguem nulos).
+      allow update: if isOwner()
+        && resource.data.status == 'pending'
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.status == 'pending'
+        && request.resource.data.signature == null
+        && request.resource.data.get('signedAt', null) == null;
+
+      // ATUALIZAÇÃO PELO CLIENTE: apenas o ato de assinar (ver isClientSigning).
+      // Depois de 'signed', nenhuma das duas regras de update passa: documento travado.
+      allow update: if isClientSigning();
+
+      // EXCLUSÃO: somente o dono, em qualquer status (inclusive 'signed').
+      allow delete: if isOwner();
+    }
+
+    // Todo o resto do banco permanece bloqueado por padrão.
+  }
+}
