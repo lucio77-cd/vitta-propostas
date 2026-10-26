@@ -17,7 +17,19 @@ export async function dashboardView() {
   } catch (e) {
     console.error(e);
     // Primeira consulta pode exigir índice composto no Firestore (o erro traz o link para criá-lo).
-    return render(`<div class="card text-red-700">Erro ao carregar propostas. Veja o console.</div>`);
+    const hint =
+      e.code === "failed-precondition" ? "Falta criar o índice composto (ownerId + createdAt). O link para criá-lo está no console (F12)."
+      : e.code === "permission-denied" ? "As regras do Firestore recusaram a consulta. Confira se foram publicadas."
+      : e.code === "unavailable" || e.code === "not-found" ? "O banco Firestore ainda não foi criado neste projeto."
+      : "";
+    const urlInErr = (e.message.match(/https:\/\/console\.firebase\.google\.com\S+/) || [])[0];
+    return render(`
+      <div class="card text-red-700 space-y-2">
+        <p class="font-semibold">Erro ao carregar propostas.</p>
+        <p class="text-sm">${esc(hint)}</p>
+        <p class="text-xs break-all">${esc(e.code || "")} ${esc(e.message)}</p>
+        ${urlInErr ? `<a class="btn btn-primary" target="_blank" rel="noopener" href="${esc(urlInErr)}">Criar índice</a>` : ""}
+      </div>`);
   }
 
   const cards = list.map((p) => `
