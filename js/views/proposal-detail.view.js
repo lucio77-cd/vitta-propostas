@@ -41,6 +41,7 @@ export async function proposalDetailView({ id }) {
       <div class="grid gap-2 no-print">
         <a href="${ShareSkill.whatsappUrl(p)}" target="_blank" rel="noopener" class="btn btn-whatsapp">Enviar por WhatsApp</a>
         <button id="btn-copy" class="btn btn-ghost">Copiar link de assinatura</button>
+        ${signed ? "" : `<a href="#/proposta/${p.id}/editar" class="btn btn-ghost">Editar proposta</a>`}
         <button id="btn-print" class="btn btn-ghost">Imprimir / salvar PDF</button>
         <button id="btn-delete" class="btn text-red-600">Excluir proposta</button>
       </div>
