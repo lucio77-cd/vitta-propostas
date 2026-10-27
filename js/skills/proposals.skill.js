@@ -1,7 +1,7 @@
 // SKILL: Propostas — regras de negócio + acesso ao Firestore.
 import { db } from "../firebase-config.js";
 import {
-  collection, doc, addDoc, getDoc, getDocs, deleteDoc,
+  collection, doc, addDoc, getDoc, getDocs, updateDoc, deleteDoc,
   query, where, orderBy, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
@@ -43,6 +43,11 @@ export const ProposalsSkill = {
     };
     const ref = await addDoc(collection(db, COL), payload);
     return ref.id;
+  },
+
+  /** Edita uma proposta pendente. As regras do Firestore bloqueiam proposta já assinada. */
+  async update(id, data) {
+    await updateDoc(doc(db, COL, id), this.sanitize(data));
   },
 
   async get(id) {
