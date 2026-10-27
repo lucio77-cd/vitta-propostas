@@ -2,6 +2,7 @@ import { render, loading, esc, brl, fmtDate, toast, setHeader, $ } from "../core
 import { router } from "../core/router.js";
 import { ProposalsSkill } from "../skills/proposals.skill.js";
 import { ShareSkill } from "../skills/share.skill.js";
+import { IntegritySkill } from "../skills/integrity.skill.js";
 
 export const proposalBody = (p) => `
   <div class="card space-y-4">
@@ -36,6 +37,8 @@ export async function proposalDetailView({ id }) {
           <span class="badge badge-signed">Assinada</span>
           <p class="mt-2">por <strong>${esc(p.signature.name)}</strong> em ${fmtDate(p.signedAt)}</p>
           <img src="${p.signature.image}" alt="Assinatura" class="mt-3 border rounded-lg bg-white max-h-32" />
+          <p id="integrity" class="text-sm mt-3 text-slate-500">Verificando integridade…</p>
+          ${p.contentHash ? `<p class="text-xs mt-1 text-slate-400 break-all">SHA-256: ${esc(p.contentHash)}</p>` : ""}
         </div>` : `<span class="badge badge-pending">Aguardando assinatura</span>`}
 
       <div class="grid gap-2 no-print">
@@ -50,6 +53,16 @@ export async function proposalDetailView({ id }) {
   $("#btn-copy").addEventListener("click", async () =>
     toast((await ShareSkill.copyLink(id)) ? "Link copiado!" : "Não foi possível copiar."));
   $("#btn-print").addEventListener("click", () => window.print());
+
+  if (signed) {
+    IntegritySkill.verify(p).then((ok) => {
+      const el = $("#integrity");
+      if (!el) return;
+      if (ok === null) el.textContent = "Assinada antes do recurso de integridade (sem hash).";
+      else if (ok) { el.textContent = "✔ Integridade verificada: o conteúdo não foi alterado desde a assinatura."; el.className = "text-sm mt-3 text-emerald-700"; }
+      else { el.textContent = "⚠ O conteúdo difere do que foi assinado."; el.className = "text-sm mt-3 text-red-700 font-semibold"; }
+    });
+  }
   $("#btn-delete").addEventListener("click", async () => {
     if (!confirm("Excluir esta proposta?")) return;
     await ProposalsSkill.remove(id);

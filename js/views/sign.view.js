@@ -2,6 +2,7 @@
 import { render, loading, esc, toast, setHeader, $ } from "../core/ui.js";
 import { ProposalsSkill } from "../skills/proposals.skill.js";
 import { SignatureSkill } from "../skills/signature.skill.js";
+import { IntegritySkill } from "../skills/integrity.skill.js";
 import { proposalBody } from "./proposal-detail.view.js";
 
 export async function signView({ id }) {
@@ -37,6 +38,7 @@ export async function signView({ id }) {
       </form>
     </div>`);
 
+  const shownHash = await IntegritySkill.hash(p); // versão que o cliente está vendo
   const pad = SignatureSkill.attachPad($("#pad"));
   $("#btn-clear").addEventListener("click", () => pad.clear());
 
@@ -47,7 +49,15 @@ export async function signView({ id }) {
     try {
       if (pad.isEmpty()) throw new Error("Faça sua assinatura no quadro.");
       const fd = Object.fromEntries(new FormData(e.target));
-      await SignatureSkill.sign(id, { ...fd, imageDataUrl: pad.toDataURL() });
+      // Reconfere o documento: se o profissional editou a proposta depois que o cliente
+      // abriu o link, a assinatura seria sobre uma versão que ele não viu.
+      const fresh = await ProposalsSkill.get(id);
+      const freshHash = await IntegritySkill.hash(fresh);
+      if (fresh.status === "signed" || freshHash !== shownHash) {
+        toast("A proposta foi atualizada. Confira a nova versão.");
+        return signView({ id });
+      }
+      await SignatureSkill.sign(id, { ...fd, imageDataUrl: pad.toDataURL(), contentHash: freshHash });
       toast("Proposta assinada!");
       signView({ id });
     } catch (err) {
