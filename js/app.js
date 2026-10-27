@@ -15,6 +15,7 @@ router
   .add("/login", loginView, { public: true })
   .add("/dashboard", dashboardView)
   .add("/proposta/nova", proposalFormView)
+  .add("/proposta/:id/editar", proposalFormView)
   .add("/proposta/:id", proposalDetailView)
   .add("/assinar/:id", signView, { public: true }); // link enviado ao cliente
 
