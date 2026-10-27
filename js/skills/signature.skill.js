@@ -58,12 +58,14 @@ export const SignatureSkill = {
   },
 
   /** Grava a assinatura na proposta e marca como assinada. */
-  async sign(proposalId, { name, document, imageDataUrl }) {
+  async sign(proposalId, { name, document, imageDataUrl, contentHash }) {
     if (!name?.trim()) throw new Error("Digite seu nome completo.");
+    if (!/^[a-f0-9]{64}$/.test(contentHash || "")) throw new Error("Não foi possível validar o documento.");
     if (!imageDataUrl) throw new Error("Faça sua assinatura no quadro.");
     await updateDoc(doc(db, "proposals", proposalId), {
       status: "signed",
       signedAt: serverTimestamp(), // deve ser exatamente request.time (validado nas regras)
+      contentHash,                 // SHA-256 do conteúdo que o cliente viu e assinou
       signature: {
         name: name.trim(),
         document: String(document || "").trim().slice(0, 30),
