@@ -34,3 +34,18 @@ export function setHeader({ visible = true, actionsHtml = "" } = {}) {
   $("#app-header").classList.toggle("hidden", !visible);
   $("#header-actions").innerHTML = actionsHtml;
 }
+
+/** Carrega um script externo (UMD) sob demanda, uma única vez por URL. */
+const loadedScripts = new Map();
+export function loadScript(src) {
+  if (!loadedScripts.has(src)) {
+    loadedScripts.set(src, new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = () => { loadedScripts.delete(src); reject(new Error("Falha ao carregar " + src)); };
+      document.head.appendChild(s);
+    }));
+  }
+  return loadedScripts.get(src);
+}
