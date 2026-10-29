@@ -10,10 +10,14 @@ import { dashboardView } from "./views/dashboard.view.js";
 import { proposalFormView } from "./views/proposal-form.view.js";
 import { proposalDetailView } from "./views/proposal-detail.view.js";
 import { signView } from "./views/sign.view.js";
+import { settingsView } from "./views/settings.view.js";
+import { contractEditorView } from "./views/contract-editor.view.js";
 
 router
   .add("/login", loginView, { public: true })
   .add("/dashboard", dashboardView)
+  .add("/configuracoes", settingsView)
+  .add("/configuracoes/contrato", contractEditorView)
   .add("/proposta/nova", proposalFormView)
   .add("/proposta/:id/editar", proposalFormView)
   .add("/proposta/:id", proposalDetailView)
