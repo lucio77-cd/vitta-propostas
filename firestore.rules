@@ -34,8 +34,9 @@ service cloud.firestore {
 
     // Transição de assinatura feita pelo CLIENTE (autenticado ou não):
     //  - o documento precisa estar 'pending';
-    //  - só podem mudar status, signature e signedAt (os três, obrigatoriamente);
-    //  - status vira 'signed' e signedAt é EXATAMENTE o horário do servidor.
+    //  - só podem mudar status, signature, signedAt e contentHash (os quatro, obrigatoriamente);
+    //  - status vira 'signed', signedAt é EXATAMENTE o horário do servidor
+    //    e contentHash é um SHA-256 em hexadecimal (64 caracteres).
     // Qualquer outro campo (itens, total, título, ownerId...) faz a regra falhar.
     function isClientSigning() {
       let changed = request.resource.data.diff(resource.data).affectedKeys();
@@ -89,6 +90,53 @@ service cloud.firestore {
 
       // EXCLUSÃO: somente o dono, em qualquer status (inclusive 'signed').
       allow delete: if isOwner();
+    }
+
+    // =====================================================================
+    // COLEÇÃO: users (perfil do profissional) - somente o próprio usuário
+    // =====================================================================
+    function optStr(d, k, max) {
+      return !(k in d) || d[k] == null || (d[k] is string && d[k].size() <= max);
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow create, update: if isSignedIn() && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(['name', 'document', 'city', 'phone', 'activeContractId', 'updatedAt'])
+        && optStr(request.resource.data, 'name', 120)
+        && optStr(request.resource.data, 'document', 30)
+        && optStr(request.resource.data, 'city', 80)
+        && optStr(request.resource.data, 'phone', 30)
+        && optStr(request.resource.data, 'activeContractId', 40)
+        && (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt == request.time);
+      allow delete: if false;
+    }
+
+    // =====================================================================
+    // COLEÇÃO: contracts (modelos de contrato em PDF) - versões IMUTÁVEIS
+    // O cliente precisa ler o modelo pelo ID (vindo da proposta); ninguém lista.
+    // Não tem dados de cliente: é só o PDF em branco e a posição dos campos.
+    // =====================================================================
+    match /contracts/{contractId} {
+      allow get: if true;
+      allow list: if false;
+
+      allow create: if isSignedIn()
+        && request.resource.data.keys().hasOnly(['ownerId', 'name', 'pdf', 'pages', 'fields', 'createdAt'])
+        && request.resource.data.keys().hasAll(['ownerId', 'name', 'pdf', 'pages', 'fields', 'createdAt'])
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 120
+        && request.resource.data.pdf is string
+        && request.resource.data.pdf.size() <= 850000          // ~600 KB de PDF em base64
+        && request.resource.data.pages is list
+        && request.resource.data.pages.size() >= 1 && request.resource.data.pages.size() <= 30
+        && request.resource.data.fields is list
+        && request.resource.data.fields.size() <= 40
+        && request.resource.data.createdAt == request.time;
+
+      // Imutável: propostas assinadas dependem desta versão. Sem update nem delete.
+      allow update, delete: if false;
     }
 
     // Todo o resto do banco permanece bloqueado por padrão.
