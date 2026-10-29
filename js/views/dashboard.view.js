@@ -7,7 +7,7 @@ import { ShareSkill } from "../skills/share.skill.js";
 export async function dashboardView() {
   setHeader({
     visible: true,
-    actionsHtml: `<button id="btn-logout" class="underline underline-offset-2">Sair</button>`
+    actionsHtml: `<a href="#/configuracoes" class="underline underline-offset-2">Configurações</a><button id="btn-logout" class="underline underline-offset-2">Sair</button>`
   });
   loading();
 
