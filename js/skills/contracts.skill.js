@@ -22,11 +22,12 @@ export const FIELD_CATALOG = [
   { key: "profissional_cidade",    label: "Sua cidade/UF",                w: 0.22, h: 0.022 },
   { key: "servico",                label: "Serviço (título da proposta)", w: 0.42, h: 0.022 },
   { key: "descricao",              label: "Descrição / escopo",           w: 0.60, h: 0.05 },
-  { key: "valor_total",            label: "Valor total",                  w: 0.22, h: 0.022 },
+  { key: "valor_total",            label: "Valor total (só o número)",    w: 0.22, h: 0.022 },
   { key: "validade",               label: "Validade da proposta",         w: 0.22, h: 0.022 },
   { key: "foro_cidade",            label: "Comarca (foro)",               w: 0.30, h: 0.022 },
   { key: "local_data",             label: "Local e data",                 w: 0.40, h: 0.022 },
-  { key: "assinatura_cliente",     label: "Assinatura do cliente",        w: 0.34, h: 0.07, type: "signature" }
+  { key: "assinatura_cliente",     label: "Assinatura do cliente",        w: 0.34, h: 0.07, type: "signature" },
+  { key: "assinatura_profissional", label: "Sua assinatura (contratado)", w: 0.34, h: 0.07, type: "signature" }
 ];
 
 export const ContractsSkill = {
