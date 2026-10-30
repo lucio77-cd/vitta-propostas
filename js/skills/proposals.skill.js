@@ -13,7 +13,11 @@ export const ProposalsSkill = {
     return items.reduce((sum, i) => sum + (Number(i.qty) || 0) * (Number(i.price) || 0), 0);
   },
 
-  /** Valida e normaliza os dados vindos do formulário. */
+  /**
+   * Valida e normaliza os dados vindos do formulário.
+   * data.contract (opcional) = { id, professional: {name, document, city, phone}, signature }:
+   * é o "retrato" do contrato e dos seus dados no momento em que a proposta é salva.
+   */
   sanitize(data) {
     const items = (data.items || [])
       .map((i) => ({ desc: String(i.desc || "").trim(), qty: Number(i.qty) || 1, price: Number(i.price) || 0 }))
@@ -21,14 +25,36 @@ export const ProposalsSkill = {
     if (!data.title?.trim()) throw new Error("Informe o título da proposta.");
     if (!data.clientName?.trim()) throw new Error("Informe o nome do cliente.");
     if (!items.length) throw new Error("Adicione ao menos um item.");
+
+    const contract = data.contract || null;
+    const clientDocument = String(data.clientDocument || "").trim().slice(0, 30);
+    if (contract) {
+      if (!clientDocument) throw new Error("Informe o CPF/CNPJ do cliente para preencher o contrato.");
+      if (!contract.id || !contract.professional?.name?.trim()) throw new Error("Preencha seu nome em Configurações para usar o contrato.");
+      if (!contract.signature) throw new Error("Cadastre sua assinatura em Configurações para usar o contrato.");
+    }
+    const pr = contract?.professional || {};
+
     return {
       title: data.title.trim(),
       clientName: data.clientName.trim(),
       clientPhone: String(data.clientPhone || "").replace(/\D/g, ""),
+      clientDocument,
+      clientAddress: String(data.clientAddress || "").trim().slice(0, 200),
       description: String(data.description || "").trim(),
       validUntil: data.validUntil || "",
       items,
-      total: this.calcTotal(items)
+      total: this.calcTotal(items),
+      contractId: contract ? contract.id : null,
+      professional: contract
+        ? {
+            name: String(pr.name || "").trim().slice(0, 120),
+            document: String(pr.document || "").trim().slice(0, 30),
+            city: String(pr.city || "").trim().slice(0, 80),
+            phone: String(pr.phone || "").trim().slice(0, 30)
+          }
+        : null,
+      professionalSignature: contract ? contract.signature : null
     };
   },
 
