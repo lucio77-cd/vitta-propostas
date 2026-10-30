@@ -53,7 +53,15 @@ export const SignatureSkill = {
         dirty = false;
       },
       isEmpty: () => !dirty,
-      toDataURL: () => canvas.toDataURL("image/png")
+      /** PNG com fundo transparente, reduzido para no máximo maxW px de largura (arquivo leve). */
+      toDataURL(maxW = 900) {
+        if (canvas.width <= maxW) return canvas.toDataURL("image/png");
+        const small = document.createElement("canvas");
+        small.width = maxW;
+        small.height = Math.round(canvas.height * (maxW / canvas.width));
+        small.getContext("2d").drawImage(canvas, 0, 0, small.width, small.height);
+        return small.toDataURL("image/png");
+      }
     };
   },
 
