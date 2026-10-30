@@ -5,7 +5,7 @@
 export const IntegritySkill = {
   /** Representação canônica: ordem fixa de campos, sempre os mesmos tipos. */
   canonical(p) {
-    return JSON.stringify({
+    const base = {
       ownerId: p.ownerId,
       title: p.title,
       clientName: p.clientName,
@@ -14,7 +14,19 @@ export const IntegritySkill = {
       validUntil: p.validUntil || "",
       items: (p.items || []).map((i) => ({ desc: i.desc, qty: Number(i.qty), price: Number(i.price) })),
       total: Number(p.total)
-    });
+    };
+    // Só propostas com contrato incluem estes campos; assim os hashes antigos continuam válidos.
+    if (p.contractId) {
+      const pr = p.professional || {};
+      Object.assign(base, {
+        clientDocument: p.clientDocument || "",
+        clientAddress: p.clientAddress || "",
+        contractId: p.contractId,
+        professional: { name: pr.name || "", document: pr.document || "", city: pr.city || "", phone: pr.phone || "" },
+        professionalSignature: p.professionalSignature || ""
+      });
+    }
+    return JSON.stringify(base);
   },
 
   async hash(p) {
